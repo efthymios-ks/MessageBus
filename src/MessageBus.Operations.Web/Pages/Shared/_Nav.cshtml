@@ -1,0 +1,12 @@
+@{
+    var section = ViewContext.RouteData.Values["page"]?.ToString() ?? string.Empty;
+    string ActiveClass(string prefix) => section.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+}
+<nav>
+    <div class="section">Runtime</div>
+    <a class="@ActiveClass("/Endpoints")" asp-page="/Endpoints/Index">Endpoints</a>
+    <a class="@ActiveClass("/Keys")" asp-page="/Keys/Index">Keys</a>
+    <div class="section">Messages</div>
+    <a class="@ActiveClass("/Errors")" asp-page="/Errors/Index">Errors</a>
+    <a class="@ActiveClass("/Audits")" asp-page="/Audits/Index">Audits</a>
+</nav>

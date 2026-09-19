@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Explorer</AssemblyName>
+		<RootNamespace>MessageBus.Explorer</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="MessageExplorerPage.html" />
+		<EmbeddedResource Include="MessageExplorerSection.html" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Core\MessageBus.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="MessageBus.Explorer.Tests" />
+	</ItemGroup>
+</Project>

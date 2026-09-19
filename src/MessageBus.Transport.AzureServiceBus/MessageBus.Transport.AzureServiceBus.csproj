@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Transport.AzureServiceBus</AssemblyName>
+		<RootNamespace>MessageBus.Transport.AzureServiceBus</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Azure.Messaging.ServiceBus" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Core\MessageBus.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="MessageBus.Transport.AzureServiceBus.Tests" />
+	</ItemGroup>
+</Project>

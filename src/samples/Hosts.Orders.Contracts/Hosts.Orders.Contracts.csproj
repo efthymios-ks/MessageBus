@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Hosts.Orders.Contracts</AssemblyName>
+		<RootNamespace>MessageBus.Hosts.Orders.Contracts</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\MessageBus.Abstractions\MessageBus.Abstractions.csproj" />
+		<ProjectReference Include="..\Hosts.Infrastructure\Hosts.Infrastructure.csproj" />
+	</ItemGroup>
+</Project>

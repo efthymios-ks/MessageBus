@@ -1,0 +1,70 @@
+@page
+@model MessageBus.Operations.Web.Pages.Endpoints.IndexModel
+@{
+    ViewData["Title"] = "Endpoints";
+    ViewData["Breadcrumbs"] = "Runtime health across every registered endpoint and instance";
+}
+
+<form method="get" class="filters" data-auto-submit>
+    <div class="field">
+        <label for="endpoint">Endpoint</label>
+        <select id="endpoint" name="endpoint">
+            <option value="">Any</option>
+            @foreach (var name in Model.EndpointNames)
+            {
+                <option value="@name" selected="@(name == Model.EndpointFilter)">@name</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="health">Health</label>
+        <select id="health" name="health">
+            <option value="" selected="@string.IsNullOrEmpty(Model.HealthFilter)">Any</option>
+            <option value="healthy" selected="@(Model.HealthFilter == "healthy")">Healthy</option>
+            <option value="unhealthy" selected="@(Model.HealthFilter == "unhealthy")">Unhealthy</option>
+        </select>
+    </div>
+</form>
+
+<table class="grid">
+    <thead>
+        <tr>
+            <th title="The logical endpoint name. Every machine running the same endpoint shares its queue, handlers, and identity.">Endpoint</th>
+            <th title="MachineName reported by the process.">Machine</th>
+            <th title="The version string the host reports at heartbeat time. Different values within one endpoint means a rollout is mid-flight or a config is out of sync.">Version</th>
+            <th title="Hash of the endpoint's messaging wiring (handlers, routes, queue names, transport settings). Different values within one endpoint means config drift.">Config</th>
+            <th title="Healthy = last heartbeat within StaleAfter and the host self-reports healthy. Stale = past StaleAfter or the host reports unhealthy.">Status</th>
+            <th class="mono" title="Messages sitting in this machine's local outbox table, waiting for the outbox relay to forward them to the broker. Growing = relay can't keep up.">Outbox</th>
+            <th class="mono" title="Messages this machine has scheduled for future delivery (saga timeouts, delayed retries). Normal to hold a few.">Delayed</th>
+            <th title="Time since the last heartbeat received from this machine. Past StaleAfter (default 2 minutes) turns the row red.">Last seen</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Instances.Count == 0)
+        {
+            <tr><td class="empty" colspan="8">No machines match your filters.</td></tr>
+        }
+        @foreach (var instance in Model.Instances)
+        {
+            <tr class="@(instance.IsStale ? "stale" : "")">
+                <td><strong>@instance.EndpointName</strong></td>
+                <td class="mono">@instance.MachineName</td>
+                <td class="mono">@(instance.Version ?? "—")</td>
+                <td class="mono dim">@instance.ConfigurationHash</td>
+                <td>
+                    @if (instance.IsStale)
+                    {
+                        <span class="badge stale">Stale</span>
+                    }
+                    else
+                    {
+                        <span class="badge healthy">Healthy</span>
+                    }
+                </td>
+                <td class="mono">@instance.OutboxPending</td>
+                <td class="mono">@instance.DelayedPending</td>
+                <td class="mono">@OperationsPageModel.FormatUtc(instance.LastSeenAt)</td>
+            </tr>
+        }
+    </tbody>
+</table>

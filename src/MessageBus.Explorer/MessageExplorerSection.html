@@ -1,0 +1,16 @@
+<section class="card">
+    <header>
+        <h2>{{WireName}}</h2>
+        <span class="badge kind-{{KindLower}}">{{Kind}}</span>
+    </header>
+
+    <p class="handlers">Handled by {{HandlerNames}}</p>
+
+    <form method="post" action="{{RoutePrefix}}">
+        <input type="hidden" name="wireName" value="{{WireName}}">
+        <textarea name="body" rows="{{Rows}}" spellcheck="false">{{SampleJson}}</textarea>
+        <div class="actions">
+            <button class="btn primary" type="submit">Send</button>
+        </div>
+    </form>
+</section>

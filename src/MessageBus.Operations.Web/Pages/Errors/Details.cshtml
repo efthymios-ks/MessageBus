@@ -1,0 +1,124 @@
+@page "/Errors/Details/{id}"
+@model MessageBus.Operations.Web.Pages.Errors.DetailsModel
+@{
+    ViewData["Title"] = "Error details";
+    ViewData["Breadcrumbs"] = "Full record, headers, payload, and its flow";
+    var failure = Model.Failure!;
+    var facts = new List<(string Label, string Value)>
+    {
+        ("Message id", failure.MessageId),
+        ("Type", failure.MessageTypeName),
+        ("Endpoint", failure.EndpointName),
+        ("Sent by", failure.SentBy ?? "—"),
+        ("Correlation", failure.CorrelationId),
+        ("Causation", failure.CausationId ?? "—"),
+        ("section:Failure", ""),
+        ("Exception", failure.ExceptionType),
+        ("Message", failure.ExceptionMessage),
+        ("First failed", OperationsPageModel.FormatUtc(failure.FirstFailedAt)),
+        ("Last failed", OperationsPageModel.FormatUtc(failure.LastFailedAt)),
+        ("Attempts", failure.FailureCount.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        ("Status", failure.Status.ToString())
+    };
+}
+
+<div class="detail-header sticky">
+    <a class="dim" asp-page="/Errors/Index" style="text-decoration: none;">← Errors</a>
+    <span class="faint">/</span>
+    <span class="id">@failure.MessageId</span>
+    <div class="actions">
+        <button type="button" class="btn primary" data-modal-open="edit-modal">Edit &amp; retry</button>
+        <form method="post"
+              asp-page-handler="Delete"
+              asp-route-id="@failure.MessageId"
+              style="display: inline;"
+              data-confirm
+              data-confirm-title="Delete this message?"
+              data-confirm-message="An entry is recorded in the Actions log before the row is removed.&#10;This cannot be undone."
+              data-confirm-label="Delete permanently"
+              data-confirm-danger>
+            <input type="hidden" name="reason" value="Deleted from details page" />
+            <button type="submit" class="btn danger">Delete permanently…</button>
+        </form>
+    </div>
+</div>
+
+<div class="panel" style="padding: 0;">
+    <div class="tabs" role="tablist">
+        <a href="#fact" class="tab active" data-tab="fact">Fact sheet</a>
+        <a href="#payload" class="tab" data-tab="payload">Payload</a>
+        <a href="#headers" class="tab" data-tab="headers">Headers <span class="pill">@Model.Headers.Count</span></a>
+        <a href="#stack" class="tab" data-tab="stack">Stack trace</a>
+        <a href="#flow" class="tab" data-tab="flow">Flow</a>
+    </div>
+    <div class="tab-content active" data-tab-content="fact">
+        <partial name="_FactSheet" model="facts" />
+    </div>
+    <div class="tab-content" data-tab-content="payload">
+        <div class="payload-actions">
+            <span class="dim">application/json</span>
+        </div>
+        <pre>@Model.PayloadJson</pre>
+    </div>
+    <div class="tab-content" data-tab-content="headers">
+        <partial name="_HeadersTable" model="Model.Headers" />
+    </div>
+    <div class="tab-content" data-tab-content="stack">
+        <pre>@(string.IsNullOrEmpty(failure.StackTrace) ? "(no stack trace)" : failure.StackTrace)</pre>
+    </div>
+    <div class="tab-content" data-tab-content="flow">
+        <div style="padding: 14px 18px;">
+            @await Component.InvokeAsync("FlowSequence", new { correlationId = failure.CorrelationId, currentMessageId = failure.MessageId })
+        </div>
+    </div>
+</div>
+
+@section Modals {
+    <div class="modal-backdrop" id="edit-modal">
+        <div class="modal" style="width: 760px;">
+            <h4>Edit &amp; retry — <code>@failure.MessageId</code></h4>
+            <form method="post" asp-page-handler="EditAndRetry" asp-route-id="@failure.MessageId">
+                <div class="body">
+                    <div class="edit-grid">
+                        <div class="field-row"><label for="edit-destination">Destination endpoint</label><input id="edit-destination" name="destination" value="@failure.EndpointName" /></div>
+                        <div class="field-row"><label for="edit-content-type">Content type</label><input id="edit-content-type" name="contentType" value="application/json" /></div>
+                        <div class="field-row"><label for="edit-correlation">Correlation id</label><input id="edit-correlation" name="correlationId" value="@failure.CorrelationId" /></div>
+                        <div class="field-row"><label for="edit-causation">Causation id</label><input id="edit-causation" name="causationId" value="@failure.CausationId" /></div>
+                    </div>
+                    <div class="field-row" style="margin-top: 14px;">
+                        <label for="edit-payload">Payload</label>
+                        <textarea id="edit-payload" name="payload" rows="14" required>@Model.PayloadJson</textarea>
+                    </div>
+                    <div class="field-row">
+                        <label for="edit-reason">Reason</label>
+                        <input id="edit-reason" name="reason" placeholder="Why this edit?" />
+                    </div>
+                </div>
+                <footer>
+                    <button type="button" class="btn" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn primary">Retry with edits</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tabs = document.querySelectorAll(".tab[data-tab]");
+            var contents = document.querySelectorAll(".tab-content[data-tab-content]");
+            function activate(key) {
+                tabs.forEach(function (t) { t.classList.toggle("active", t.getAttribute("data-tab") === key); });
+                contents.forEach(function (c) { c.classList.toggle("active", c.getAttribute("data-tab-content") === key); });
+            }
+            tabs.forEach(function (t) {
+                t.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    activate(t.getAttribute("data-tab"));
+                });
+            });
+            if (location.hash) activate(location.hash.slice(1));
+        })();
+    </script>
+}

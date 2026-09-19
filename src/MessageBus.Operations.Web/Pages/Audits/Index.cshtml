@@ -1,0 +1,123 @@
+@page
+@model MessageBus.Operations.Web.Pages.Audits.IndexModel
+@{
+    ViewData["Title"] = "Audits";
+    ViewData["Breadcrumbs"] = "Every message processed — filter, group, inspect";
+}
+
+<div class="groups-tabs">
+    <a class="btn small @(Model.GroupBy == string.Empty ? "primary" : "")" asp-route-group="" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">List</a>
+    <a class="btn small @(Model.GroupBy == "endpoint" ? "primary" : "")" asp-route-group="endpoint" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Group by endpoint</a>
+    <a class="btn small @(Model.GroupBy == "endpoint-type" ? "primary" : "")" asp-route-group="endpoint-type" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Group by endpoint and type</a>
+    <a class="btn small @(Model.GroupBy == "type" ? "primary" : "")" asp-route-group="type" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Group by type</a>
+</div>
+
+<form method="get" class="filters" data-auto-submit>
+    <input type="hidden" name="group" value="@Model.GroupBy" />
+    <div class="field">
+        <label for="endpoint">Endpoint</label>
+        <select id="endpoint" name="endpoint">
+            <option value="">Any</option>
+            @foreach (var name in Model.EndpointNames)
+            {
+                <option value="@name" selected="@(name == Model.EndpointFilter)">@name</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="type">Message type</label>
+        <select id="type" name="type">
+            <option value="">Any</option>
+            @foreach (var name in Model.MessageTypeNames)
+            {
+                <option value="@name" selected="@(name == Model.TypeFilter)">@name</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="filter">Filter</label>
+        <input id="filter" name="filter" value="@Model.FreeTextFilter" placeholder="Message id, correlation id, causation id, sender" />
+    </div>
+</form>
+
+@if (Model.GroupBy == string.Empty && Model.Results is { } list)
+{
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Message</th>
+                <th>Endpoint</th>
+                <th>Sent by</th>
+                <th class="mono">Duration</th>
+                <th class="mono">Attempt</th>
+                <th>Processed</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (list.Audits.Count == 0)
+            {
+                <tr><td class="empty" colspan="7">No audits match your filters.</td></tr>
+            }
+            @foreach (var audit in list.Audits)
+            {
+                <tr>
+                    <td>
+                        <div><strong class="mono">@audit.MessageTypeName</strong></div>
+                        <div class="faint mono" style="font-size: 11px;">@audit.MessageId</div>
+                    </td>
+                    <td>@audit.EndpointName</td>
+                    <td>@(audit.SentBy ?? "—")</td>
+                    <td class="mono center">@audit.DurationMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) ms</td>
+                    <td class="mono center">@audit.DeliveryAttempt</td>
+                    <td class="mono">@OperationsPageModel.FormatUtc(audit.ProcessedAt)</td>
+                    <td><a asp-page="/Audits/Details" asp-route-id="@audit.MessageId">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pager">
+        <span>Showing @((list.Page - 1) * list.PageSize + 1)–@(Math.Min(list.Page * list.PageSize, list.TotalCount)) of @list.TotalCount</span>
+        <div class="btn-group">
+            @if (list.HasPrevious)
+            {
+                <a class="btn small" asp-route-p="@(list.Page - 1)" asp-route-group="@Model.GroupBy" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Prev</a>
+            }
+            @if (list.HasNext)
+            {
+                <a class="btn small" asp-route-p="@(list.Page + 1)" asp-route-group="@Model.GroupBy" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Next</a>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Endpoint</th>
+                <th>Message type</th>
+                <th>Count</th>
+                <th>Avg duration</th>
+                <th>Most recent</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Groups.Count == 0)
+            {
+                <tr><td class="empty" colspan="5">No audits match your filters.</td></tr>
+            }
+            @foreach (var group in Model.Groups)
+            {
+                <tr>
+                    <td>@group.EndpointName</td>
+                    <td class="mono">@group.MessageTypeName</td>
+                    <td class="mono center">@group.Count</td>
+                    <td class="mono center">@group.AverageDurationMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) ms</td>
+                    <td class="mono">@OperationsPageModel.FormatUtc(group.MostRecentAt)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

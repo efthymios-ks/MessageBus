@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Transport.RabbitMq</AssemblyName>
+		<RootNamespace>MessageBus.Transport.RabbitMq</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="RabbitMQ.Client" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Core\MessageBus.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="MessageBus.Transport.RabbitMq.Tests" />
+	</ItemGroup>
+</Project>

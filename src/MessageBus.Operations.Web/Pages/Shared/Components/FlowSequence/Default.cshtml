@@ -1,0 +1,315 @@
+@using System.Text.Encodings.Web
+@using System.Text.Json
+@using MessageBus.Operations.Flows
+@using MessageBus.Operations.Web.ViewComponents
+@model FlowSequenceModel
+@{
+    var diagram = Model.Diagram;
+    var messageCount = diagram.Steps.Count;
+    var failureCount = diagram.Steps.Count(step => step.Node.IsFailed);
+
+    // Razor swallows `<text>` as its own transition tag, so every SVG text element is emitted as
+    // a raw HTML string through this helper.
+    string TextElement(string cssClass, int x, int y, string content, string? textAnchor = null)
+    {
+        var anchor = textAnchor is null ? "" : $" text-anchor=\"{textAnchor}\"";
+        return $"<text class=\"{cssClass}\" x=\"{x}\" y=\"{y}\"{anchor}>{HtmlEncoder.Default.Encode(content)}</text>";
+    }
+
+    // Same as TextElement, but stamps both formats as data attributes so a JS toggle can swap
+    // textContent without re-rendering.
+    string TimeTextElement(int x, int y, string absolute, string relative, string? textAnchor = null)
+    {
+        var anchor = textAnchor is null ? "" : $" text-anchor=\"{textAnchor}\"";
+        var encodedAbs = HtmlEncoder.Default.Encode(absolute);
+        var encodedRel = HtmlEncoder.Default.Encode(relative);
+        return $"<text class=\"msg-time\" x=\"{x}\" y=\"{y}\"{anchor} data-abs=\"{encodedAbs}\" data-rel=\"{encodedRel}\">{encodedAbs}</text>";
+    }
+
+    // Pretty-print JSON payloads, fall back to the raw text for anything else.
+    static string PrettyPayload(string body)
+    {
+        if (string.IsNullOrEmpty(body)) return "(no payload)";
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (JsonException)
+        {
+            return body;
+        }
+    }
+
+    static Dictionary<string, string> ParseHeaders(string json)
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            return parsed is null
+                ? new Dictionary<string, string>(StringComparer.Ordinal)
+                : parsed.OrderBy(entry => entry.Key, StringComparer.Ordinal)
+                    .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+        }
+    }
+
+    var previewJson = new JsonSerializerOptions { WriteIndented = false };
+}
+
+<div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-faint); margin-bottom: 14px;">
+    <div class="grow">
+        Correlation <code>@Model.CorrelationId</code>
+        · @messageCount message@(messageCount == 1 ? "" : "s")
+        · @failureCount failure@(failureCount == 1 ? "" : "s")
+    </div>
+    <label class="toggle">
+        <input type="checkbox" id="flow-time-toggle" />
+        Relative times
+    </label>
+</div>
+
+@if (messageCount == 0)
+{
+    <div class="dim center" style="padding: 40px;">No messages found for this correlation id.</div>
+}
+else
+{
+    <div class="flow-sequence-wrap">
+        <svg viewBox="0 0 @diagram.Width @diagram.Height" width="@diagram.Width" height="@diagram.Height" class="flow-sequence">
+            @foreach (var lane in diagram.Lanes)
+            {
+                var boxWidth = 170;
+                var boxX = lane.X - boxWidth / 2;
+                <rect class="participant-box" x="@boxX" y="10" width="@boxWidth" height="32" rx="4" />
+                @Html.Raw(TextElement("participant", lane.X, 30, lane.EndpointName, textAnchor: "middle"))
+                <line class="lifeline" x1="@lane.X" y1="@SequenceDiagram.HeaderHeight" x2="@lane.X" y2="@(diagram.Height - 8)" />
+            }
+
+            @{
+                // First message in causal order is the origin. Every other message's relative time
+                // is measured from here. The first message keeps its absolute time even in relative
+                // mode — an origin needs a real timestamp.
+                var origin = diagram.Steps[0].Node.At;
+            }
+            @foreach (var step in diagram.Steps)
+            {
+                var node = step.Node;
+                var y = step.Y;
+                var bandY = y - SequenceDiagram.StepHeight / 2;
+                var groupClass = "msg-group";
+                if (node.IsFailed) groupClass += " failed";
+                if (node.MessageId == Model.CurrentMessageId) groupClass += " current";
+                var absoluteTime = OperationsTimeFormat.Absolute(node.At);
+                var relativeTime = node.At == origin ? absoluteTime : OperationsTimeFormat.Relative(node.At - origin);
+
+                <g class="@groupClass" data-message-id="@node.MessageId">
+                    <rect class="row-band" x="0" y="@bandY" width="@diagram.Width" height="@SequenceDiagram.StepHeight" />
+                    @if (node.IsFailed)
+                    {
+                        var failLeft = Math.Min(step.FromX, step.ToX) - 12;
+                        var failWidth = Math.Max(24, Math.Abs(step.ToX - step.FromX) + 24);
+                        if (step.IsSelfCall)
+                        {
+                            failLeft = step.FromX - 8;
+                            failWidth = 260;
+                        }
+                        <rect class="fail-band" x="@failLeft" y="@(bandY + 6)" width="@failWidth" height="@(SequenceDiagram.StepHeight - 12)" rx="4" />
+                    }
+                    @{
+                        // Two lines above the arrow: type on top, timestamp below. Nothing else.
+                        // Failure state is signalled by the red band and the .failed class; the exception
+                        // detail lives on the message's details modal.
+                        var labelLine1Y = y - 22;
+                        var labelLine2Y = y - 8;
+                    }
+                    @if (step.IsSelfCall)
+                    {
+                        var r = 26;
+                        var d = $"M {step.FromX} {y - 12} q {r} 0 {r} 14 q 0 14 -{r} 14";
+                        var labelX = step.FromX + r + 10;
+                        <path class="msg-arrow" d="@d" />
+                        <polygon class="msg-tip" points="@($"{step.FromX},{y + 16} {step.FromX + 8},{y + 12} {step.FromX + 8},{y + 20}")" />
+                        @Html.Raw(TextElement("msg-label", labelX, labelLine1Y, node.MessageTypeName))
+                        @Html.Raw(TimeTextElement(labelX, labelLine2Y, absoluteTime, relativeTime))
+                    }
+                    else
+                    {
+                        var tipLen = 9;
+                        var lineEndX = step.PointsRight ? step.ToX - tipLen : step.ToX + tipLen;
+                        var tipPoints = step.PointsRight
+                            ? $"{step.ToX},{y} {step.ToX - tipLen},{y - 5} {step.ToX - tipLen},{y + 5}"
+                            : $"{step.ToX},{y} {step.ToX + tipLen},{y - 5} {step.ToX + tipLen},{y + 5}";
+                        // Left-align labels at the arrow's left edge so type and time share the same X
+                        // and read as a single stacked block regardless of arrow direction.
+                        var labelX = Math.Min(step.FromX, step.ToX) + 10;
+                        <line class="msg-arrow" x1="@step.FromX" y1="@y" x2="@lineEndX" y2="@y" />
+                        <polygon class="msg-tip" points="@tipPoints" />
+                        @Html.Raw(TextElement("msg-label", labelX, labelLine1Y, node.MessageTypeName))
+                        @Html.Raw(TimeTextElement(labelX, labelLine2Y, absoluteTime, relativeTime))
+                    }
+                </g>
+            }
+        </svg>
+    </div>
+
+    @* Per-message data store. Payload + headers are rendered on the client from these blobs
+       so clicking a message opens a preview without a round trip. *@
+    <div class="flow-preview-store" hidden>
+        @foreach (var step in diagram.Steps)
+        {
+            var node = step.Node;
+            var preview = new
+            {
+                messageId = node.MessageId,
+                messageType = node.MessageTypeName,
+                endpoint = node.EndpointName,
+                sentBy = node.SentBy,
+                causationId = node.CausationId,
+                at = OperationsTimeFormat.Absolute(node.At),
+                duration = node.DurationMilliseconds is { } d ? d.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + " ms" : null,
+                isFailed = node.IsFailed,
+                failureSummary = node.FailureSummary,
+                headers = ParseHeaders(node.Headers),
+                payload = PrettyPayload(node.Body)
+            };
+            <script type="application/json" data-flow-message="@node.MessageId">@Html.Raw(JsonSerializer.Serialize(preview, previewJson))</script>
+        }
+    </div>
+
+    @* Preview-only modal. Read-only — no retry, no delete, no edit. Same tabs as the details
+       page, minus the Flow tab (we are already looking at it) and minus the action bar. *@
+    <div class="modal-backdrop" id="flow-preview-modal">
+        <div class="modal" style="width: 760px;">
+            <h4>Message <code id="flow-preview-id"></code></h4>
+            <div class="body" style="padding: 0;">
+                <div class="tabs" role="tablist">
+                    <a href="#" class="tab active" data-preview-tab="fact">Fact sheet</a>
+                    <a href="#" class="tab" data-preview-tab="payload">Payload</a>
+                    <a href="#" class="tab" data-preview-tab="headers">Headers <span class="pill" id="flow-preview-headers-count">0</span></a>
+                </div>
+                <div class="tab-content active" data-preview-tab-content="fact">
+                    <div class="body" style="padding: 14px 18px;">
+                        <dl id="flow-preview-fact"></dl>
+                    </div>
+                </div>
+                <div class="tab-content" data-preview-tab-content="payload">
+                    <div class="payload-actions"><span class="dim">application/json</span></div>
+                    <pre id="flow-preview-payload"></pre>
+                </div>
+                <div class="tab-content" data-preview-tab-content="headers">
+                    <table class="headers-table" id="flow-preview-headers"></table>
+                </div>
+            </div>
+            <footer>
+                <button type="button" class="btn" data-modal-close>Close</button>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var modal = document.getElementById("flow-preview-modal");
+            if (!modal) return;
+
+            var idLabel = document.getElementById("flow-preview-id");
+            var factList = document.getElementById("flow-preview-fact");
+            var payloadPre = document.getElementById("flow-preview-payload");
+            var headersTable = document.getElementById("flow-preview-headers");
+            var headersCount = document.getElementById("flow-preview-headers-count");
+
+            function escape(text) {
+                return String(text)
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;');
+            }
+
+            function factRow(label, value, isSection) {
+                if (isSection) {
+                    return '<dt class="section">' + escape(label) + '</dt><dd class="section"></dd>';
+                }
+                var display = (value === null || value === undefined || value === "") ? "—" : value;
+                return '<dt>' + escape(label) + '</dt><dd>' + escape(display) + '</dd>';
+            }
+
+            function renderFact(data) {
+                var rows = [];
+                rows.push(factRow('Message id', data.messageId));
+                rows.push(factRow('Type', data.messageType));
+                rows.push(factRow('Endpoint', data.endpoint));
+                rows.push(factRow('Sent by', data.sentBy));
+                rows.push(factRow('Causation', data.causationId));
+                rows.push(factRow('At', data.at));
+                if (data.isFailed) {
+                    rows.push(factRow('Failure', null, true));
+                    rows.push(factRow('Summary', data.failureSummary));
+                } else {
+                    rows.push(factRow('Timing', null, true));
+                    rows.push(factRow('Duration', data.duration));
+                }
+                factList.innerHTML = rows.join('');
+            }
+
+            function renderHeaders(headers) {
+                var keys = Object.keys(headers);
+                headersCount.textContent = keys.length;
+                if (keys.length === 0) {
+                    headersTable.innerHTML = '<tr><td class="empty" colspan="2">(no headers)</td></tr>';
+                    return;
+                }
+                headersTable.innerHTML = keys.map(function (key) {
+                    return '<tr><td>' + escape(key) + '</td><td>' + escape(headers[key]) + '</td></tr>';
+                }).join('');
+            }
+
+            function activateTab(key) {
+                modal.querySelectorAll('[data-preview-tab]').forEach(function (t) {
+                    t.classList.toggle('active', t.getAttribute('data-preview-tab') === key);
+                });
+                modal.querySelectorAll('[data-preview-tab-content]').forEach(function (c) {
+                    c.classList.toggle('active', c.getAttribute('data-preview-tab-content') === key);
+                });
+            }
+
+            modal.querySelectorAll('[data-preview-tab]').forEach(function (t) {
+                t.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    activateTab(t.getAttribute('data-preview-tab'));
+                });
+            });
+
+            document.querySelectorAll('svg.flow-sequence g.msg-group').forEach(function (group) {
+                group.addEventListener('click', function () {
+                    var messageId = group.getAttribute('data-message-id');
+                    if (!messageId) return;
+                    var script = document.querySelector('script[data-flow-message="' + CSS.escape(messageId) + '"]');
+                    if (!script) return;
+                    var data = JSON.parse(script.textContent);
+                    idLabel.textContent = data.messageId;
+                    renderFact(data);
+                    payloadPre.textContent = data.payload;
+                    renderHeaders(data.headers || {});
+                    activateTab('fact');
+                    modal.classList.add('open');
+                });
+            });
+
+            // Absolute ↔ relative time swap. Each msg-time element carries both formats as data
+            // attributes; the toggle just swaps textContent — no re-render.
+            var timeToggle = document.getElementById('flow-time-toggle');
+            var timeCells = document.querySelectorAll('svg.flow-sequence text.msg-time[data-abs]');
+            if (timeToggle) {
+                timeToggle.addEventListener('change', function () {
+                    var mode = timeToggle.checked ? 'rel' : 'abs';
+                    timeCells.forEach(function (cell) {
+                        cell.textContent = cell.getAttribute('data-' + mode);
+                    });
+                });
+            }
+        })();
+    </script>
+}

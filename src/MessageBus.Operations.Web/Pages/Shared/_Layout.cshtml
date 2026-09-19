@@ -1,0 +1,67 @@
+@{
+    var pageTitle = ViewData["Title"] as string ?? string.Empty;
+    var breadcrumbs = ViewData["Breadcrumbs"] as string ?? string.Empty;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@pageTitle — MessageBus Operations</title>
+    <script>
+        // Applied before first paint so a stored dark theme does not flash light on reload.
+        try {
+            var t = localStorage.getItem("ops-theme");
+            if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+        } catch (_) { /* localStorage disabled */ }
+    </script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app">
+        <aside>
+            <div class="brand">
+                MessageBus Operations
+                <small>web-operations</small>
+            </div>
+            <partial name="_Nav" />
+        </aside>
+        <main>
+            <header class="topbar">
+                <div class="titles">
+                    <div class="title">@pageTitle</div>
+                    <div class="breadcrumbs">@breadcrumbs</div>
+                </div>
+                <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">
+                    <span id="theme-icon">☀</span>
+                </button>
+            </header>
+            <div class="content">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    @await RenderSectionAsync("Modals", required: false)
+
+    @* Reusable confirm modal. Any form/button with data-confirm attributes intercepts here. *@
+    <div class="modal-backdrop" id="global-confirm-modal">
+        <div class="modal" style="width: 460px;">
+            <h4 id="global-confirm-title">Confirm</h4>
+            <div class="body">
+                <p id="global-confirm-message" style="margin: 0; white-space: pre-line;"></p>
+            </div>
+            <footer>
+                <button type="button" class="btn" data-modal-close>Cancel</button>
+                <button type="button" class="btn primary" id="global-confirm-ok">Confirm</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <script src="~/js/modal.js" asp-append-version="true"></script>
+    <script src="~/js/confirm.js" asp-append-version="true"></script>
+    <script src="~/js/filters.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

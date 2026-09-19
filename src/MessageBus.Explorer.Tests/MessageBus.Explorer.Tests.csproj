@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Explorer.Tests</AssemblyName>
+		<RootNamespace>MessageBus.Explorer.Tests</RootNamespace>
+	</PropertyGroup>
+	<PropertyGroup>
+		<IsPackable>false</IsPackable>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="xunit" />
+		<PackageReference Include="xunit.runner.visualstudio" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Explorer\MessageBus.Explorer.csproj" />
+		<ProjectReference Include="..\MessageBus.Testing\MessageBus.Testing.csproj" />
+	</ItemGroup>
+</Project>

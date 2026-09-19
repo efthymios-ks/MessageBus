@@ -1,0 +1,10 @@
+@model IReadOnlyList<KeyValuePair<string, string?>>
+<table class="headers-table">
+    @foreach (var (key, value) in Model)
+    {
+        <tr>
+            <td>@key</td>
+            <td>@(string.IsNullOrEmpty(value) ? "—" : value)</td>
+        </tr>
+    }
+</table>

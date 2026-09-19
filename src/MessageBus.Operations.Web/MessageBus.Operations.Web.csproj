@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Operations.Web</AssemblyName>
+		<RootNamespace>MessageBus.Operations.Web</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AspNetCore.SassCompiler">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Assets\scss\**\*.scss" Watch="true" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Operations\MessageBus.Operations.csproj" />
+		<ProjectReference Include="..\MessageBus.OpenTelemetry\MessageBus.OpenTelemetry.csproj" />
+		<ProjectReference Include="..\MessageBus.Transport.RabbitMq\MessageBus.Transport.RabbitMq.csproj" />
+		<ProjectReference Include="..\MessageBus.Transport.AzureServiceBus\MessageBus.Transport.AzureServiceBus.csproj" />
+	</ItemGroup>
+</Project>

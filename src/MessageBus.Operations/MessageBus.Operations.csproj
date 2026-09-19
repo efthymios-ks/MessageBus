@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Operations</AssemblyName>
+		<RootNamespace>MessageBus.Operations</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Core\MessageBus.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="MessageBus.Operations.Tests" />
+		<InternalsVisibleTo Include="MessageBus.Operations.Web" />
+	</ItemGroup>
+</Project>

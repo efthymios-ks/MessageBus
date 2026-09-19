@@ -1,0 +1,72 @@
+@page "/Audits/Details/{id}"
+@model MessageBus.Operations.Web.Pages.Audits.DetailsModel
+@{
+    ViewData["Title"] = "Audit details";
+    ViewData["Breadcrumbs"] = "Full record, headers, payload, and its flow";
+    var audit = Model.Audit!;
+    var facts = new List<(string Label, string Value)>
+    {
+        ("Message id", audit.MessageId),
+        ("Type", audit.MessageTypeName),
+        ("Endpoint", audit.EndpointName),
+        ("Sent by", audit.SentBy ?? "—"),
+        ("Correlation", audit.CorrelationId),
+        ("Causation", audit.CausationId ?? "—"),
+        ("section:Timing", ""),
+        ("Processed at", OperationsPageModel.FormatUtc(audit.ProcessedAt)),
+        ("Duration", audit.DurationMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + " ms"),
+        ("Attempt", audit.DeliveryAttempt.ToString(System.Globalization.CultureInfo.InvariantCulture))
+    };
+}
+
+<div class="detail-header sticky">
+    <a class="dim" asp-page="/Audits/Index" style="text-decoration: none;">← Audits</a>
+    <span class="faint">/</span>
+    <span class="id">@audit.MessageId</span>
+</div>
+
+<div class="panel" style="padding: 0;">
+    <div class="tabs" role="tablist">
+        <a href="#fact" class="tab active" data-tab="fact">Fact sheet</a>
+        <a href="#payload" class="tab" data-tab="payload">Payload</a>
+        <a href="#headers" class="tab" data-tab="headers">Headers <span class="pill">@Model.Headers.Count</span></a>
+        <a href="#flow" class="tab" data-tab="flow">Flow</a>
+    </div>
+    <div class="tab-content active" data-tab-content="fact">
+        <partial name="_FactSheet" model="facts" />
+    </div>
+    <div class="tab-content" data-tab-content="payload">
+        <div class="payload-actions">
+            <span class="dim">application/json</span>
+        </div>
+        <pre>@Model.PayloadJson</pre>
+    </div>
+    <div class="tab-content" data-tab-content="headers">
+        <partial name="_HeadersTable" model="Model.Headers" />
+    </div>
+    <div class="tab-content" data-tab-content="flow">
+        <div style="padding: 14px 18px;">
+            @await Component.InvokeAsync("FlowSequence", new { correlationId = audit.CorrelationId, currentMessageId = audit.MessageId })
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tabs = document.querySelectorAll(".tab[data-tab]");
+            var contents = document.querySelectorAll(".tab-content[data-tab-content]");
+            function activate(key) {
+                tabs.forEach(function (t) { t.classList.toggle("active", t.getAttribute("data-tab") === key); });
+                contents.forEach(function (c) { c.classList.toggle("active", c.getAttribute("data-tab-content") === key); });
+            }
+            tabs.forEach(function (t) {
+                t.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    activate(t.getAttribute("data-tab"));
+                });
+            });
+            if (location.hash) activate(location.hash.slice(1));
+        })();
+    </script>
+}

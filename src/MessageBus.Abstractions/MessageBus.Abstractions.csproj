@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Abstractions</AssemblyName>
+		<RootNamespace>MessageBus.Abstractions</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup Label="State and completion are set by the dispatcher, not by handler code">
+		<InternalsVisibleTo Include="MessageBus.Core" />
+		<InternalsVisibleTo Include="MessageBus.Testing" />
+		<InternalsVisibleTo Include="MessageBus.Core.Tests" />
+	</ItemGroup>
+</Project>

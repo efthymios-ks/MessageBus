@@ -1,0 +1,182 @@
+@page
+@model MessageBus.Operations.Web.Pages.Keys.IndexModel
+@{
+    ViewData["Title"] = "Keys";
+    ViewData["Breadcrumbs"] = "Manage the credentials endpoints use to identify themselves.";
+    var justCreatedKey = Model.NewKeyValue;
+    var justCreatedFor = Model.NewKeyEndpoint;
+    var createForm = Model.CreateForm;
+    var editForm = Model.EditForm;
+}
+
+@if (!string.IsNullOrEmpty(justCreatedKey))
+{
+    <div class="banner success">
+        <div class="grow">
+            <strong>New key for <code>@justCreatedFor</code>:</strong>
+            <code>@justCreatedKey</code>
+            <div class="dim" style="font-size: 12px; margin-top: 3px;">
+                Copy it now. Set the endpoint's <code>Messaging:Operations:ApiKey</code> to the value and restart it.
+            </div>
+        </div>
+    </div>
+}
+
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+    <button class="btn primary" type="button" data-modal-open="create-modal">+ Create key</button>
+    <div style="flex:1"></div>
+    <form method="get" style="display: inline;">
+        <label class="toggle">
+            <input type="checkbox" name="showDisabled" value="true" onchange="this.form.submit()" checked="@Model.ShowDisabled" />
+            Show disabled
+        </label>
+    </form>
+</div>
+
+<table class="grid keys-table">
+    <thead>
+        <tr>
+            <th title="The logical endpoint this credential belongs to. Every machine of that endpoint sends heartbeats with this key.">Endpoint</th>
+            <th title="When this endpoint was first registered here in Operations.">Registered</th>
+            <th title="How long without a heartbeat before an instance of this endpoint is treated as stale. Default 2 minutes.">Stale after</th>
+            <th title="When Operations last received a heartbeat authenticated with this key.">Last seen</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Keys.Count == 0)
+        {
+            <tr><td class="empty" colspan="4">No keys registered.</td></tr>
+        }
+        @foreach (var row in Model.Keys)
+        {
+            <tr
+                class="row-clickable @(row.Disabled ? "row-disabled" : "")"
+                data-endpoint="@row.EndpointName"
+                data-key="@row.ApiKey"
+                data-stale="@row.StaleAfter"
+                data-disabled="@(row.Disabled ? "true" : "false")">
+                <td>
+                    <strong>@row.EndpointName</strong>
+                    @if (row.Disabled)
+                    {
+                        <span class="badge discard" style="margin-left: 8px;">Disabled</span>
+                    }
+                </td>
+                <td class="mono">@OperationsPageModel.FormatUtc(row.RegisteredAt)</td>
+                <td class="mono">@row.StaleAfter</td>
+                <td class="mono">@OperationsPageModel.FormatUtc(row.LastSeenAt)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Modals {
+    <!-- CREATE -->
+    <div class="modal-backdrop" id="create-modal">
+        <div class="modal">
+            <h4>Create key</h4>
+            <form method="post" asp-page-handler="Create">
+                <div class="body">
+                    @if (!string.IsNullOrEmpty(Model.CreateError))
+                    {
+                        <div class="form-error" role="alert">@Model.CreateError</div>
+                    }
+                    <div class="field-row">
+                        <label for="create-name">Endpoint name</label>
+                        <input id="create-name" name="endpointName" placeholder="For example, shipping-api" value="@createForm.EndpointName" autofocus />
+                        <div class="hint">Must match the host's <code>Messaging:EndpointName</code> exactly.</div>
+                    </div>
+                    <div class="field-row">
+                        <label for="create-stale">Stale after</label>
+                        <input id="create-stale" name="staleAfter" value="@createForm.StaleAfter" style="max-width: 120px;" />
+                        <div class="hint">hh:mm:ss.</div>
+                    </div>
+                    <div class="field-row">
+                        <label for="create-key">Key (optional)</label>
+                        <input id="create-key" name="key" placeholder="Leave blank to generate" value="@createForm.Key" />
+                        <div class="hint">Set this on the host as <code>Messaging:Operations:ApiKey</code> and restart it.</div>
+                    </div>
+                </div>
+                <footer>
+                    <button type="button" class="btn" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn primary">Create</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT -->
+    <div class="modal-backdrop" id="edit-modal">
+        <div class="modal">
+            <h4>Edit key for <code id="edit-endpoint-label">@editForm.EndpointName</code></h4>
+            <form method="post" asp-page-handler="Save">
+                <input type="hidden" id="edit-endpoint-name" name="endpointName" value="@editForm.EndpointName" />
+                <div class="body">
+                    @if (!string.IsNullOrEmpty(Model.EditError))
+                    {
+                        <div class="form-error" role="alert">@Model.EditError</div>
+                    }
+                    <div class="field-row">
+                        <label for="edit-key">Key</label>
+                        <div class="row">
+                            <input id="edit-key" name="key" value="@editForm.Key" required />
+                            <button type="button" class="btn small" onclick="document.getElementById('edit-key').value = generateRandomKey()">Rotate to random</button>
+                        </div>
+                        <div class="hint">Rotate to random then Save to commit. Any live instance still using the previous key starts getting 401.</div>
+                    </div>
+                    <div class="field-row">
+                        <label for="edit-stale">Stale after</label>
+                        <input id="edit-stale" name="staleAfter" value="@editForm.StaleAfter" style="max-width: 120px;" />
+                        <div class="hint">hh:mm:ss.</div>
+                    </div>
+                    <div class="field-row">
+                        <label class="toggle">
+                            <input type="checkbox" id="edit-disabled" name="disabled" value="true" @(editForm.Disabled ? "checked" : "") />
+                            Disabled
+                        </label>
+                        <div class="hint">A disabled endpoint's key is refused at <code>/api/heartbeats</code> and it disappears from Endpoints.</div>
+                    </div>
+                </div>
+                <footer>
+                    <button type="button" class="btn" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn primary">Save</button>
+                </footer>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            // Row click -> populate + open the edit modal.
+            document.querySelectorAll(".keys-table tr.row-clickable").forEach(function (row) {
+                row.addEventListener("click", function () {
+                    var endpoint = row.getAttribute("data-endpoint");
+                    document.getElementById("edit-endpoint-name").value = endpoint;
+                    document.getElementById("edit-endpoint-label").textContent = endpoint;
+                    document.getElementById("edit-key").value = row.getAttribute("data-key");
+                    document.getElementById("edit-stale").value = row.getAttribute("data-stale");
+                    document.getElementById("edit-disabled").checked = row.getAttribute("data-disabled") === "true";
+                    document.getElementById("edit-modal").classList.add("open");
+                });
+            });
+
+            // Server keeps the failing modal open so the user can fix the invalid field without
+            // losing the rest of what they typed.
+            var reopen = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenModal));
+            if (reopen === "create") {
+                document.getElementById("create-modal").classList.add("open");
+            } else if (reopen === "edit") {
+                document.getElementById("edit-modal").classList.add("open");
+            }
+        })();
+
+        function generateRandomKey() {
+            var hex = "";
+            for (var i = 0; i < 32; i++) hex += Math.floor(Math.random() * 16).toString(16);
+            var suffix = Math.random().toString(36).slice(2, 6);
+            return "k_" + hex + "_" + suffix;
+        }
+    </script>
+}

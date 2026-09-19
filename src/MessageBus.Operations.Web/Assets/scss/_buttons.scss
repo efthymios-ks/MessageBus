@@ -1,0 +1,52 @@
+.btn {
+    background: var(--bg-panel-muted);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    padding: 5px 12px;
+    border-radius: 4px;
+    font: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+
+    &:hover {
+        border-color: var(--text-faint);
+        text-decoration: none;
+    }
+
+    &.primary {
+        background: var(--color-accent-strong);
+        border-color: var(--color-accent);
+        color: white;
+
+        &:hover {
+            background: var(--color-accent);
+        }
+    }
+
+    &.danger {
+        background: var(--bg-error);
+        border-color: var(--color-error);
+        color: var(--color-error);
+
+        &:hover {
+            background: var(--color-error);
+            color: white;
+        }
+    }
+
+    &.small {
+        padding: 3px 8px;
+        font-size: 12px;
+    }
+
+    &.ghost {
+        background: transparent;
+    }
+}
+
+.btn-group {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}

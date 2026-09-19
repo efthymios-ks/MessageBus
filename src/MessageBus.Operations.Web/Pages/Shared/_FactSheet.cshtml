@@ -1,0 +1,23 @@
+@*
+    A dl-based key/value fact sheet. Rows come in as a list of (label, value) tuples. Use a
+    label starting with "section:" to render a section header spanning both columns; the label
+    after the prefix is the section title.
+*@
+@model IReadOnlyList<(string Label, string Value)>
+<div class="body" style="padding: 14px 18px;">
+    <dl>
+        @foreach (var (label, value) in Model)
+        {
+            if (label.StartsWith("section:", StringComparison.Ordinal))
+            {
+                <dt class="section">@label["section:".Length..]</dt>
+                <dd class="section"></dd>
+            }
+            else
+            {
+                <dt>@label</dt>
+                <dd>@(string.IsNullOrEmpty(value) ? "—" : value)</dd>
+            }
+        }
+    </dl>
+</div>

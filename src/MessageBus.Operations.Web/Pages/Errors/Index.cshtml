@@ -1,0 +1,271 @@
+@page
+@model MessageBus.Operations.Web.Pages.Errors.IndexModel
+@{
+    ViewData["Title"] = "Errors";
+    ViewData["Breadcrumbs"] = "Messages that failed and their retry / delete options";
+    var listResults = Model.Results;
+    var totalMatching = listResults?.TotalCount ?? 0;
+}
+
+<div class="groups-tabs">
+    <a class="btn small @(Model.GroupBy == string.Empty ? "primary" : "")" asp-route-group="" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">List</a>
+    <a class="btn small @(Model.GroupBy == "endpoint" ? "primary" : "")" asp-route-group="endpoint" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Group by endpoint</a>
+    <a class="btn small @(Model.GroupBy == "endpoint-type" ? "primary" : "")" asp-route-group="endpoint-type" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Group by endpoint and type</a>
+    <a class="btn small @(Model.GroupBy == "type" ? "primary" : "")" asp-route-group="type" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Group by type</a>
+</div>
+
+<form method="get" class="filters" data-auto-submit>
+    <input type="hidden" name="group" value="@Model.GroupBy" />
+    <div class="field">
+        <label for="endpoint">Endpoint</label>
+        <select id="endpoint" name="endpoint">
+            <option value="">Any</option>
+            @foreach (var name in Model.EndpointNames)
+            {
+                <option value="@name" selected="@(name == Model.EndpointFilter)">@name</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="type">Message type</label>
+        <select id="type" name="type">
+            <option value="">Any</option>
+            @foreach (var name in Model.MessageTypeNames)
+            {
+                <option value="@name" selected="@(name == Model.TypeFilter)">@name</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="filter">Filter</label>
+        <input id="filter" name="filter" value="@Model.FreeTextFilter" placeholder="Message id, correlation id, causation id, sender" />
+    </div>
+</form>
+
+@if (Model.GroupBy == string.Empty && listResults is { } list)
+{
+    <div class="bulk-bar on">
+        <span class="count">@totalMatching matching this filter</span>
+        <div style="flex:1"></div>
+        <button type="button" class="btn small" data-bulk-action="retry" @(totalMatching == 0 ? "disabled" : "")>Retry all matching…</button>
+        <button type="button" class="btn small danger" data-bulk-action="delete" @(totalMatching == 0 ? "disabled" : "")>Delete all matching…</button>
+    </div>
+
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Message</th>
+                <th>Endpoint</th>
+                <th>Exception</th>
+                <th>Attempts</th>
+                <th>Last failed</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (list.Failures.Count == 0)
+            {
+                <tr><td class="empty" colspan="6">No errors match your filters.</td></tr>
+            }
+            @foreach (var failure in list.Failures)
+            {
+                <tr>
+                    <td>
+                        <div><strong class="mono">@failure.MessageTypeName</strong></div>
+                        <div class="faint mono" style="font-size: 11px;">@failure.MessageId</div>
+                    </td>
+                    <td>@failure.EndpointName</td>
+                    <td>
+                        <div>@failure.ExceptionType</div>
+                        <div class="faint" style="font-size: 11px;">@(failure.ExceptionMessage.Length > 80 ? failure.ExceptionMessage[..80] + "…" : failure.ExceptionMessage)</div>
+                    </td>
+                    <td class="mono center">@failure.FailureCount</td>
+                    <td class="mono">@OperationsPageModel.FormatUtc(failure.LastFailedAt)</td>
+                    <td><a asp-page="/Errors/Details" asp-route-id="@failure.MessageId">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pager">
+        <span>Showing @((list.Page - 1) * list.PageSize + 1)–@(Math.Min(list.Page * list.PageSize, list.TotalCount)) of @list.TotalCount</span>
+        <div class="btn-group">
+            @if (list.HasPrevious)
+            {
+                <a class="btn small" asp-route-p="@(list.Page - 1)" asp-route-group="@Model.GroupBy" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Prev</a>
+            }
+            @if (list.HasNext)
+            {
+                <a class="btn small" asp-route-p="@(list.Page + 1)" asp-route-group="@Model.GroupBy" asp-route-endpoint="@Model.EndpointFilter" asp-route-type="@Model.TypeFilter" asp-route-filter="@Model.FreeTextFilter">Next</a>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <table class="grid">
+        <thead>
+            <tr>
+                @if (Model.GroupBy is "endpoint" or "endpoint-type")
+                {
+                    <th>Endpoint</th>
+                }
+                @if (Model.GroupBy is "type" or "endpoint-type")
+                {
+                    <th>Message type</th>
+                }
+                @if (Model.GroupBy == "type")
+                {
+                    <th>Endpoint</th>
+                }
+                <th>Count</th>
+                <th>Most recent</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Groups.Count == 0)
+            {
+                <tr><td class="empty" colspan="4">No errors match your filters.</td></tr>
+            }
+            @foreach (var group in Model.Groups)
+            {
+                <tr>
+                    @if (Model.GroupBy is "endpoint" or "endpoint-type")
+                    {
+                        <td>@group.EndpointName</td>
+                    }
+                    @if (Model.GroupBy is "type" or "endpoint-type")
+                    {
+                        <td class="mono">@group.MessageTypeName</td>
+                    }
+                    @if (Model.GroupBy == "type")
+                    {
+                        <td>@group.EndpointName</td>
+                    }
+                    <td class="mono center">@group.Count</td>
+                    <td class="mono">@OperationsPageModel.FormatUtc(group.LastFailedAt)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@section Modals {
+    <div class="modal-backdrop" id="bulk-modal">
+        <div class="modal" style="width: 620px;">
+            <h4 id="bulk-modal-title">Retry all matching…</h4>
+            <div class="body" id="bulk-modal-body">
+                <div class="dim" id="bulk-modal-loading">Fetching current matches…</div>
+
+                <div id="bulk-modal-summary" hidden>
+                    <div style="margin-bottom: 12px;">
+                        <strong id="bulk-modal-total">0</strong>
+                        <span class="dim" id="bulk-modal-action-word"> messages will be actioned.</span>
+                    </div>
+                    <table class="headers-table" id="bulk-modal-groups">
+                    </table>
+                    <div class="field-row" id="bulk-modal-reason-row" style="margin-top: 14px;" hidden>
+                        <label for="bulk-modal-reason">Reason</label>
+                        <input id="bulk-modal-reason" placeholder="Why this delete?" />
+                    </div>
+                </div>
+
+                <div id="bulk-modal-empty" hidden>
+                    <div class="dim">Nothing matches the current filter. There is nothing to do.</div>
+                </div>
+            </div>
+            <footer>
+                <button type="button" class="btn" data-modal-close>Cancel</button>
+                <form method="post" id="bulk-modal-form" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="reason" id="bulk-modal-reason-hidden" />
+                    <button type="submit" class="btn primary" id="bulk-modal-confirm" disabled>Confirm</button>
+                </form>
+            </footer>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var modal = document.getElementById("bulk-modal");
+            if (!modal) return;
+
+            var title = document.getElementById("bulk-modal-title");
+            var loading = document.getElementById("bulk-modal-loading");
+            var summary = document.getElementById("bulk-modal-summary");
+            var empty = document.getElementById("bulk-modal-empty");
+            var totalEl = document.getElementById("bulk-modal-total");
+            var actionWord = document.getElementById("bulk-modal-action-word");
+            var groupsTable = document.getElementById("bulk-modal-groups");
+            var reasonRow = document.getElementById("bulk-modal-reason-row");
+            var reasonInput = document.getElementById("bulk-modal-reason");
+            var reasonHidden = document.getElementById("bulk-modal-reason-hidden");
+            var form = document.getElementById("bulk-modal-form");
+            var confirmBtn = document.getElementById("bulk-modal-confirm");
+
+            var summaryUrl = "@Url.Page(null, "Summary")";
+            var retryUrl = "@Url.Page(null, "RetryMatching")";
+            var deleteUrl = "@Url.Page(null, "DeleteMatching")";
+
+            function escape(text) {
+                return String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+            }
+
+            function buildQuery() {
+                var params = new URLSearchParams(window.location.search);
+                // Preserve the filter, drop paging and grouping — the action runs on everything
+                // matching, regardless of what page the user is on.
+                params.delete("p");
+                params.delete("group");
+                return params.toString();
+            }
+
+            function openFor(action) {
+                var isDelete = action === "delete";
+                title.textContent = isDelete ? "Delete all matching…" : "Retry all matching…";
+                actionWord.textContent = isDelete ? " message(s) will be deleted permanently." : " message(s) will be retried.";
+                reasonRow.hidden = !isDelete;
+                confirmBtn.textContent = isDelete ? "Delete permanently" : "Retry";
+                confirmBtn.classList.toggle("danger", isDelete);
+                form.action = (isDelete ? deleteUrl : retryUrl) + "?" + buildQuery();
+                confirmBtn.disabled = true;
+                loading.hidden = false;
+                summary.hidden = true;
+                empty.hidden = true;
+                modal.classList.add("open");
+
+                fetch(summaryUrl + "?" + buildQuery(), { headers: { "Accept": "application/json" } })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        loading.hidden = true;
+                        if (!data || data.total === 0) {
+                            empty.hidden = false;
+                            confirmBtn.disabled = true;
+                            return;
+                        }
+                        totalEl.textContent = data.total;
+                        groupsTable.innerHTML = data.groups.map(function (group) {
+                            return '<tr><td>' + escape(group.endpointName) + '</td><td class="mono center">' + group.count + '</td></tr>';
+                        }).join('');
+                        summary.hidden = false;
+                        confirmBtn.disabled = false;
+                    })
+                    .catch(function () {
+                        loading.textContent = "Failed to fetch the summary. Close and try again.";
+                    });
+            }
+
+            form.addEventListener("submit", function () {
+                reasonHidden.value = reasonInput.value || "";
+            });
+
+            document.querySelectorAll("[data-bulk-action]").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    openFor(button.getAttribute("data-bulk-action"));
+                });
+            });
+        })();
+    </script>
+}

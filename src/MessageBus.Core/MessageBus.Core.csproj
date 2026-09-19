@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Core</AssemblyName>
+		<RootNamespace>MessageBus.Core</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Options" />
+		<PackageReference Include="System.Threading.RateLimiting" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Abstractions\MessageBus.Abstractions.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="MessageBus.Persistence.EntityFrameworkCore" />
+		<InternalsVisibleTo Include="MessageBus.Operations" />
+		<InternalsVisibleTo Include="MessageBus.Testing" />
+		<InternalsVisibleTo Include="MessageBus.Core.Tests" />
+	</ItemGroup>
+</Project>

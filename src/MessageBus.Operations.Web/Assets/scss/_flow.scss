@@ -1,0 +1,79 @@
+// SVG sequence diagram used inside details tabs. Server-rendered from a FlowSequenceModel.
+.flow-sequence-wrap {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.flow-sequence {
+    display: block;
+    font-family: var(--font-sans);
+
+    .participant {
+        fill: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 12px;
+    }
+
+    .participant-box {
+        fill: var(--bg-panel-muted);
+        stroke: var(--border-strong);
+    }
+
+    .lifeline {
+        stroke: var(--border-strong);
+        stroke-dasharray: 4, 4;
+    }
+
+    .msg-label {
+        fill: var(--text-primary);
+        font-family: var(--font-mono);
+        font-size: 12px;
+    }
+
+    .msg-time {
+        fill: var(--text-faint);
+        font-family: var(--font-mono);
+        font-size: 10px;
+    }
+
+    .msg-meta {
+        fill: var(--text-faint);
+        font-size: 11px;
+    }
+
+    .msg-arrow {
+        stroke: var(--text-primary);
+        stroke-width: 1.5px;
+        fill: none;
+    }
+
+    .msg-tip {
+        fill: var(--text-primary);
+        stroke: none;
+    }
+
+    .msg-group {
+        cursor: pointer;
+
+        &:hover .msg-arrow {
+            stroke-width: 2.5px;
+        }
+    }
+
+    .row-band {
+        fill: transparent;
+    }
+
+    .msg-group:hover .row-band {
+        fill: color-mix(in srgb, var(--text-primary) 5%, transparent);
+    }
+
+    .fail-band {
+        fill: color-mix(in srgb, var(--color-error) 14%, transparent);
+    }
+
+    .msg-group.failed .msg-meta {
+        fill: var(--color-error);
+    }
+}

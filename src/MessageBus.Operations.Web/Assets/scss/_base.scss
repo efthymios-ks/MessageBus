@@ -1,0 +1,89 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    font: 13px/1.5 var(--font-sans);
+    color: var(--text-primary);
+    background: var(--bg-page);
+}
+
+h2 {
+    font-size: 15px;
+    margin: 22px 0 10px;
+    font-weight: 600;
+}
+
+.mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.dim {
+    color: var(--text-muted);
+}
+
+.faint {
+    color: var(--text-faint);
+}
+
+.center {
+    text-align: center;
+}
+
+.pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    background: var(--bg-panel-muted);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+}
+
+.checkbox {
+    accent-color: var(--color-accent);
+    width: 15px;
+    height: 15px;
+}
+
+// Toggle used in the Keys "Show disabled" and other filter switches.
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+
+    input {
+        accent-color: var(--color-accent);
+    }
+}
+
+// Pager under a table — Prev/Next.
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 8px 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    .btn-group .btn {
+        padding: 4px 10px;
+    }
+}

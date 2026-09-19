@@ -1,0 +1,33 @@
+# Keep the build context small so `docker build` uploads seconds, not minutes.
+**/bin/
+**/obj/
+**/node_modules/
+**/.vs/
+**/.vscode/
+**/.idea/
+
+# Local build artefacts and test output
+**/TestResults/
+**/*.user
+**/*.suo
+**/*.log
+
+# Repo dressing that has no business inside an image
+.git/
+.github/
+.gitignore
+.gitattributes
+.editorconfig
+.claude/
+docs/
+README.md
+CLAUDE.md
+LICENSE*
+
+# Container files themselves — the daemon already has them
+**/Dockerfile*
+**/.dockerignore
+**/docker-compose*.yml
+
+# Non-target hosts and dev-only orchestration
+src/samples/

@@ -1,0 +1,76 @@
+// Design tokens as CSS custom properties. Two themes: light default, dark opt-in via [data-theme="dark"].
+// Adding a token here is the only place a colour is spelled out; every component reads through var(--x).
+// Names are grouped by prefix so intent reads before nuance: --bg-*, --border-*, --text-*, --color-*, --shadow-*, --font-*.
+
+:root,
+:root[data-theme="light"] {
+    // Backgrounds
+    --bg-page: #f5f7fb;
+    --bg-panel: #ffffff;
+    --bg-panel-muted: #eef1f6;
+    --bg-success: #e8f6ef;
+    --bg-warning: #fbf3d9;
+    --bg-error: #fdecee;
+    --bg-row-stale: rgba(198, 40, 40, 0.06);
+    --bg-row-stale-hover: rgba(198, 40, 40, 0.12);
+    --bg-overlay: rgba(20, 25, 35, 0.35);
+
+    // Borders
+    --border-subtle: #dfe3ea;
+    --border-strong: #c4cbd6;
+
+    // Text
+    --text-primary: #1a1f2c;
+    --text-muted: #4a5262;
+    --text-faint: #7a8394;
+    --text-code: #a25a10;
+
+    // Semantic colours (used for text tint, borders, and accents)
+    --color-accent: #2f6ee0;
+    --color-accent-strong: #1e57c2;
+    --color-success: #157a5c;
+    --color-warning: #8a6a10;
+    --color-error: #c62828;
+
+    // Effects
+    --shadow-elevated: 0 10px 30px rgba(20, 30, 55, 0.12);
+}
+
+:root[data-theme="dark"] {
+    // Backgrounds
+    --bg-page: #0f1218;
+    --bg-panel: #171b23;
+    --bg-panel-muted: #1e2330;
+    --bg-success: #0f2620;
+    --bg-warning: #2b2410;
+    --bg-error: #2a1417;
+    --bg-row-stale: rgba(229, 72, 77, 0.10);
+    --bg-row-stale-hover: rgba(229, 72, 77, 0.16);
+    --bg-overlay: rgba(0, 0, 0, 0.55);
+
+    // Borders
+    --border-subtle: #2a2f3d;
+    --border-strong: #3a4152;
+
+    // Text
+    --text-primary: #e6eaf2;
+    --text-muted: #9ba3b3;
+    --text-faint: #6b7385;
+    --text-code: #e8c690;
+
+    // Semantic colours
+    --color-accent: #4c8dff;
+    --color-accent-strong: #2f6ee0;
+    --color-success: #4ec9b0;
+    --color-warning: #d7b34a;
+    --color-error: #e5484d;
+
+    // Effects
+    --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+:root {
+    // Fonts
+    --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}

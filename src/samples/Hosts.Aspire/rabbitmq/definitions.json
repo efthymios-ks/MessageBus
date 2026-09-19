@@ -1,0 +1,100 @@
+{
+  "rabbit_version": "4.0.0",
+  "users": [
+    {
+      "name": "guest",
+      "password": "guest",
+      "tags": [ "administrator" ]
+    }
+  ],
+  "vhosts": [ { "name": "/" } ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "orders",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "billing",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "messagebus-error",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "messagebus-audit",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "Orders.OrderPlaced.v1",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "Billing.OrderBilled.v1",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "Orders.OrderPlaced.v1",
+      "vhost": "/",
+      "destination": "billing",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "Orders.OrderPlaced.v1",
+      "vhost": "/",
+      "destination": "orders",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "Billing.OrderBilled.v1",
+      "vhost": "/",
+      "destination": "orders",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ],
+  "policies": [],
+  "parameters": [],
+  "global_parameters": [],
+  "topic_permissions": []
+}

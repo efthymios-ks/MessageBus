@@ -1,0 +1,11 @@
+@*
+    Reusable table wrapper. Callers pass `@RenderSection` or supply the whole table via the
+    body. Nothing here beyond the wrap; the .grid class does the styling. Kept as a partial so
+    if we later want overflow-x scroll etc. we adjust one place.
+*@
+@if (Model is not null)
+{
+    <table class="grid">
+        @RenderBody()
+    </table>
+}

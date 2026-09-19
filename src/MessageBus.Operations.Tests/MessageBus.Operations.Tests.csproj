@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Operations.Tests</AssemblyName>
+		<RootNamespace>MessageBus.Operations.Tests</RootNamespace>
+	</PropertyGroup>
+	<PropertyGroup>
+		<IsPackable>false</IsPackable>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="SSH.NET" />
+		<PackageReference Include="Testcontainers.MsSql" />
+		<PackageReference Include="xunit" />
+		<PackageReference Include="xunit.runner.visualstudio" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MessageBus.Operations\MessageBus.Operations.csproj" />
+		<ProjectReference Include="..\MessageBus.Testing\MessageBus.Testing.csproj" />
+	</ItemGroup>
+</Project>

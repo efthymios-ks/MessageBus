@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<AssemblyName>MessageBus.Hosts.Infrastructure</AssemblyName>
+		<RootNamespace>MessageBus.Hosts.Infrastructure</RootNamespace>
+	</PropertyGroup>
+
+</Project>
